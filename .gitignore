@@ -1,0 +1,7 @@
+node_modules/
+client/node_modules/
+client/dist/
+corals.db
+corals.db-wal
+corals.db-shm
+.env

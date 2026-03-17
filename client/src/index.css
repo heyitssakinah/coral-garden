@@ -1,0 +1,65 @@
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --font-display: 'Quicksand', system-ui, sans-serif;
+  --color-ocean-950: #0a1628;
+  --color-ocean-900: #0d1f3c;
+  --color-ocean-800: #112a4a;
+  --color-ocean-700: #1a3a5c;
+  --color-ocean-600: #1e4d7a;
+  --color-sand-100: #f5f0e8;
+  --color-sand-200: #e8dfd2;
+  --color-coral-400: #ff7f7f;
+  --color-coral-500: #ff6b6b;
+  --color-coral-600: #ee5a5a;
+  --color-teal-400: #4fd1c5;
+  --color-teal-500: #38b2ac;
+  --color-seafoam: #a8e6cf;
+}
+
+body {
+  font-family: var(--font-display);
+  background: linear-gradient(180deg, #0d1f3c 0%, #112a4a 40%, #1a3a5c 70%, #1e4d7a 100%);
+  min-height: 100vh;
+}
+
+/* Bubble animation */
+@keyframes rise {
+  0% { transform: translateY(0) scale(1); opacity: 0.4; }
+  100% { transform: translateY(-100vh) scale(0.5); opacity: 0; }
+}
+
+.bubble {
+  position: fixed;
+  bottom: -20px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.2), rgba(255,255,255,0.05));
+  border: 1px solid rgba(255,255,255,0.1);
+  animation: rise linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Canvas cursor */
+.canvas-draw { cursor: crosshair; }
+.canvas-erase { cursor: cell; }
+
+/* Coral card hover */
+.coral-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.coral-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+}
+
+/* Fade in animation */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s ease-out forwards;
+}
