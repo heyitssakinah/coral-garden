@@ -176,9 +176,9 @@ function ZCoral({ coral, cameraZ }) {
 
   // Fully random position in the tunnel — each axis independent from coral.id
   const x = -45 + seed() * 90; // -45vw to +45vw from center (wide spread)
-  const y = 5 + seed() * 35; // +5vh to +40vh below center (grounded on the lower half)
+  const y = -5 + seed() * 35; // +20vh to +55vh below center (grounded on the lower half)
   const zDepth = -(seed() * OCEAN_DEPTH); // randomly scattered across the full depth
-  const size = 80 + seed() * 200; // 80-280px base size
+  const size = 120 + seed() * 200; // 120-320px base size
   const swayDuration = 3 + seed() * 4;
 
   // Relative Z: how far this coral is from the camera
