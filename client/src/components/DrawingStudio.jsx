@@ -1,35 +1,37 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
-import { Eraser, Undo2, Trash2, Send } from 'lucide-react'
+import { Eraser, Undo2, Trash2, Send, Pencil, X } from 'lucide-react'
 
-const CORAL_COLORS = [
-  '#FF6B6B', '#FF8E8E', '#FFB3B3',
-  '#FF7F50', '#FFA07A', '#E8735A',
-  '#C75B9B', '#D4A5D8', '#9B59B6',
-  '#4FD1C5', '#48BB78', '#A8E6CF',
-  '#F6E05E', '#FBBF24', '#FFFFFF',
+const PALETTE = [
+  '#325483', '#ac245b', '#ed7149', '#ffce34',
+  '#edc9be', '#abbad8', '#ffffff', '#1a1a2e',
 ]
 
 export default function DrawingStudio({ onSubmit }) {
   const canvasRef = useRef(null)
+  const [open, setOpen] = useState(false)
   const [isDrawing, setIsDrawing] = useState(false)
-  const [color, setColor] = useState(CORAL_COLORS[0])
+  const [color, setColor] = useState(PALETTE[1])
   const [brushSize, setBrushSize] = useState(6)
   const [isErasing, setIsErasing] = useState(false)
   const [history, setHistory] = useState([])
   const [authorName, setAuthorName] = useState('')
   const [status, setStatus] = useState({ type: '', msg: '' })
   const [submitting, setSubmitting] = useState(false)
+  const [initialized, setInitialized] = useState(false)
 
-  // Initialize canvas with transparent background
+  // Init canvas when panel first opens
   useEffect(() => {
-    const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d')
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    saveHistory()
-  }, [])
+    if (open && !initialized && canvasRef.current) {
+      const ctx = canvasRef.current.getContext('2d')
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
+      saveHistory()
+      setInitialized(true)
+    }
+  }, [open, initialized])
 
   const saveHistory = useCallback(() => {
     const canvas = canvasRef.current
+    if (!canvas) return
     setHistory(prev => [...prev.slice(-20), canvas.toDataURL()])
   }, [])
 
@@ -52,8 +54,7 @@ export default function DrawingStudio({ onSubmit }) {
 
   const startDraw = (e) => {
     e.preventDefault()
-    const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d')
+    const ctx = canvasRef.current.getContext('2d')
     const pos = getPos(e)
     ctx.beginPath()
     ctx.moveTo(pos.x, pos.y)
@@ -125,7 +126,7 @@ export default function DrawingStudio({ onSubmit }) {
     try {
       const imageData = canvasRef.current.toDataURL('image/png')
       await onSubmit(imageData, authorName)
-      setStatus({ type: 'success', msg: 'Coral planted in the reef!' })
+      setStatus({ type: 'success', msg: 'Coral planted!' })
       clearCanvas()
       setAuthorName('')
     } catch (err) {
@@ -138,121 +139,139 @@ export default function DrawingStudio({ onSubmit }) {
   const cursorClass = isErasing ? 'canvas-erase' : 'canvas-draw'
 
   return (
-    <section className="bg-ocean-800/60 backdrop-blur-sm rounded-2xl border border-white/10 p-6 mb-12 max-w-lg mx-auto">
-      <h2 className="text-2xl font-bold text-center mb-4 text-sand-100">Draw Your Coral</h2>
-
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-4 mb-4">
-        {/* Brush size */}
-        <div className="flex items-center gap-2">
-          <label htmlFor="brush-size" className="text-sm text-sand-200">Brush</label>
-          <input
-            id="brush-size"
-            type="range"
-            min="2"
-            max="24"
-            value={brushSize}
-            onChange={(e) => setBrushSize(Number(e.target.value))}
-            className="w-20 accent-coral-400"
-          />
-        </div>
-
-        {/* Color palette */}
-        <div className="flex flex-wrap gap-1.5">
-          {CORAL_COLORS.map(c => (
-            <button
-              key={c}
-              onClick={() => { setColor(c); setIsErasing(false) }}
-              className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 ${
-                color === c && !isErasing ? 'border-white scale-110' : 'border-transparent'
-              }`}
-              style={{ backgroundColor: c }}
-              title={c}
-              aria-label={`Color ${c}`}
-            />
-          ))}
-        </div>
-
-        {/* Tool buttons */}
-        <div className="flex gap-1.5 ml-auto">
-          <button
-            onClick={() => setIsErasing(!isErasing)}
-            className={`p-2 rounded-lg transition-colors ${
-              isErasing ? 'bg-coral-500 text-white' : 'bg-white/10 text-sand-200 hover:bg-white/20'
-            }`}
-            title="Eraser"
-          >
-            <Eraser size={18} />
-          </button>
-          <button
-            onClick={undo}
-            className="p-2 rounded-lg bg-white/10 text-sand-200 hover:bg-white/20 transition-colors"
-            title="Undo"
-          >
-            <Undo2 size={18} />
-          </button>
-          <button
-            onClick={clearCanvas}
-            className="p-2 rounded-lg bg-white/10 text-sand-200 hover:bg-white/20 transition-colors"
-            title="Clear"
-          >
-            <Trash2 size={18} />
-          </button>
-        </div>
-      </div>
-
-      {/* Canvas */}
-      <div className="relative rounded-xl overflow-hidden border border-white/10 mb-4">
-        <div
-          className="absolute inset-0"
-          style={{
-            background: 'linear-gradient(180deg, #0a1628 0%, #112a4a 60%, #1a3a5c 100%)',
-          }}
-        />
-        <canvas
-          ref={canvasRef}
-          width={400}
-          height={400}
-          className={`relative block w-full aspect-square ${cursorClass}`}
-          onMouseDown={startDraw}
-          onMouseMove={draw}
-          onMouseUp={stopDraw}
-          onMouseLeave={stopDraw}
-          onTouchStart={startDraw}
-          onTouchMove={draw}
-          onTouchEnd={stopDraw}
-        />
-      </div>
-
-      {/* Submit row */}
-      <div className="flex gap-3">
-        <input
-          type="text"
-          value={authorName}
-          onChange={(e) => setAuthorName(e.target.value)}
-          placeholder="Your name (optional)"
-          maxLength={30}
-          autoComplete="off"
-          className="flex-1 px-4 py-2.5 rounded-xl bg-ocean-900/80 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-teal-400/50 transition-colors"
-        />
+    <>
+      {/* Floating trigger button */}
+      {!open && (
         <button
-          onClick={handleSubmit}
-          disabled={submitting}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-coral-500 hover:bg-coral-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold transition-colors"
+          onClick={() => setOpen(true)}
+          className="fixed bottom-8 right-10 z-50 flex items-center gap-2 px-5 py-3 rounded-full bg-coral text-white font-semibold shadow-lg hover:opacity-90 transition-opacity"
         >
-          <Send size={16} />
-          {submitting ? 'Planting...' : 'Plant Coral'}
+          <Pencil size={18} />
+          Draw a coral
         </button>
-      </div>
-
-      {/* Status message */}
-      {status.msg && (
-        <p className={`mt-3 text-sm text-center font-medium ${
-          status.type === 'error' ? 'text-red-400' : 'text-seafoam'
-        }`} role="alert">
-          {status.msg}
-        </p>
       )}
-    </section>
+
+      {/* Floating panel */}
+      {open && (
+        <div className="fixed bottom-8 right-10 z-50 w-96 bg-white rounded-2xl border-2 border-mist/40 shadow-xl">
+          {/* Panel header */}
+          <div className="flex items-center justify-between px-5 pt-4 pb-2">
+            <h2 className="text-base font-semibold text-deep">Draw your coral</h2>
+            <button
+              onClick={() => setOpen(false)}
+              className="p-1 rounded-lg hover:bg-light transition-colors text-mist"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          <div className="px-5 pb-5">
+            {/* Toolbar */}
+            <div className="flex flex-wrap items-center gap-3 mb-3">
+              <div className="flex items-center gap-2">
+                <label htmlFor="brush-size" className="text-xs text-mist">Size</label>
+                <input
+                  id="brush-size"
+                  type="range"
+                  min="2"
+                  max="24"
+                  value={brushSize}
+                  onChange={(e) => setBrushSize(Number(e.target.value))}
+                  className="w-16 accent-deep"
+                />
+              </div>
+
+              <div className="flex gap-1.5">
+                {PALETTE.map(c => (
+                  <button
+                    key={c}
+                    onClick={() => { setColor(c); setIsErasing(false) }}
+                    className={`rounded-full border-2 transition-all hover:scale-110 ${
+                      color === c && !isErasing
+                        ? 'border-deep scale-110'
+                        : 'border-light'
+                    }`}
+                    style={{ backgroundColor: c, width: 26, height: 26 }}
+                    aria-label={`Color ${c}`}
+                  />
+                ))}
+              </div>
+
+              <div className="flex gap-1 ml-auto">
+                <button
+                  onClick={() => setIsErasing(!isErasing)}
+                  className={`p-1.5 rounded-lg text-sm transition-colors ${
+                    isErasing ? 'bg-coral text-white' : 'bg-light text-deep hover:bg-mist/30'
+                  }`}
+                  title="Eraser"
+                >
+                  <Eraser size={14} />
+                </button>
+                <button
+                  onClick={undo}
+                  className="p-1.5 rounded-lg bg-light text-deep hover:bg-mist/30 transition-colors"
+                  title="Undo"
+                >
+                  <Undo2 size={14} />
+                </button>
+                <button
+                  onClick={clearCanvas}
+                  className="p-1.5 rounded-lg bg-light text-deep hover:bg-mist/30 transition-colors"
+                  title="Clear"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            </div>
+
+            {/* Canvas */}
+            <div className="rounded-xl overflow-hidden border-2 border-mist/30 bg-white mb-4">
+              <canvas
+                ref={canvasRef}
+                width={400}
+                height={400}
+                className={`block w-full aspect-square ${cursorClass}`}
+                onMouseDown={startDraw}
+                onMouseMove={draw}
+                onMouseUp={stopDraw}
+                onMouseLeave={stopDraw}
+                onTouchStart={startDraw}
+                onTouchMove={draw}
+                onTouchEnd={stopDraw}
+              />
+            </div>
+
+            {/* Submit */}
+            <div className="flex gap-2.5">
+              <input
+                type="text"
+                value={authorName}
+                onChange={(e) => setAuthorName(e.target.value)}
+                placeholder="Your name"
+                maxLength={30}
+                autoComplete="off"
+                className="flex-1 px-3.5 py-2.5 rounded-lg border-2 border-mist/30 bg-white text-deep text-sm placeholder-mist focus:outline-none focus:border-deep/40 transition-colors"
+              />
+              <button
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-deep text-white text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+              >
+                <Send size={14} />
+                {submitting ? '...' : 'Plant'}
+              </button>
+            </div>
+
+            {status.msg && (
+              <p className={`mt-2 text-xs text-center font-medium ${
+                status.type === 'error' ? 'text-ember' : 'text-deep'
+              }`} role="alert">
+                {status.msg}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </>
   )
 }

@@ -1,65 +1,61 @@
-@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @import "tailwindcss";
 
 @theme {
-  --font-display: 'Quicksand', system-ui, sans-serif;
-  --color-ocean-950: #0a1628;
-  --color-ocean-900: #0d1f3c;
-  --color-ocean-800: #112a4a;
-  --color-ocean-700: #1a3a5c;
-  --color-ocean-600: #1e4d7a;
-  --color-sand-100: #f5f0e8;
-  --color-sand-200: #e8dfd2;
-  --color-coral-400: #ff7f7f;
-  --color-coral-500: #ff6b6b;
-  --color-coral-600: #ee5a5a;
-  --color-teal-400: #4fd1c5;
-  --color-teal-500: #38b2ac;
-  --color-seafoam: #a8e6cf;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --color-deep: #325483;
+  --color-sun: #ffce34;
+  --color-coral: #ac245b;
+  --color-ember: #ed7149;
+  --color-blush: #edc9be;
+  --color-mist: #abbad8;
+  --color-white: #ffffff;
+  --color-offwhite: #e8eef6;
+  --color-light: #d4ddef;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  font-family: var(--font-display);
-  background: linear-gradient(180deg, #0d1f3c 0%, #112a4a 40%, #1a3a5c 70%, #1e4d7a 100%);
-  min-height: 100vh;
+  font-family: var(--font-body);
+  color: var(--color-deep);
+  margin: 0;
+  overflow-x: hidden;
 }
 
-/* Bubble animation */
-@keyframes rise {
-  0% { transform: translateY(0) scale(1); opacity: 0.4; }
-  100% { transform: translateY(-100vh) scale(0.5); opacity: 0; }
-}
-
-.bubble {
-  position: fixed;
-  bottom: -20px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.2), rgba(255,255,255,0.05));
-  border: 1px solid rgba(255,255,255,0.1);
-  animation: rise linear infinite;
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Canvas cursor */
+/* Canvas */
 .canvas-draw { cursor: crosshair; }
 .canvas-erase { cursor: cell; }
 
-/* Coral card hover */
-.coral-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+/* Scroll hint bounce */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(8px); }
 }
-.coral-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+.scroll-hint {
+  animation: bounce 2s ease-in-out infinite;
 }
 
-/* Fade in animation */
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Gentle sway for corals — uses rotate only so it composes with translate3d */
+@keyframes sway {
+  0%, 100% { rotate: var(--sway-start, -2deg); }
+  50% { rotate: var(--sway-end, 2deg); }
 }
-.animate-fade-in-up {
-  animation: fadeInUp 0.4s ease-out forwards;
+.coral-sway {
+  animation: sway 4s ease-in-out infinite;
+}
+
+/* Bubble float upward */
+@keyframes bubbleRise {
+  0% { transform: translateY(0) scale(1); opacity: var(--bubble-opacity, 0.3); }
+  100% { transform: translateY(-100vh) scale(0.6); opacity: 0; }
+}
+.ocean-bubble {
+  animation: bubbleRise linear infinite;
+  pointer-events: none;
 }
