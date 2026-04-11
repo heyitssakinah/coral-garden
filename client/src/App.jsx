@@ -4,7 +4,7 @@ import DrawingStudio from "./components/DrawingStudio";
 import { ChevronDown } from "lucide-react";
 
 // Total Z-depth of the ocean tunnel
-const OCEAN_DEPTH = 8000;
+const OCEAN_DEPTH = 10000;
 // How many px of scroll maps to the full depth
 const SCROLL_RANGE = 4000;
 

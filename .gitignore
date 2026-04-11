@@ -5,3 +5,4 @@ corals.db
 corals.db-wal
 corals.db-shm
 .env
+.vercel
