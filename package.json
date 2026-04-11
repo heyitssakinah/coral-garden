@@ -2,22 +2,23 @@
   "name": "coral-garden",
   "version": "1.0.0",
   "description": "",
-  "main": "server.js",
   "scripts": {
-    "dev:server": "node server.js",
-    "dev:client": "cd client && npm run dev",
+    "dev": "concurrently \"node dev-server.js\" \"cd client && npm run dev\"",
     "build": "cd client && npm install && npm run build",
-    "start": "node server.js"
+    "lint": "cd client && npm run lint"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
-    "@libsql/client": "^0.15.15",
-    "better-sqlite3": "^12.8.0",
-    "express": "^5.2.1",
-    "express-rate-limit": "^8.3.1",
-    "helmet": "^8.1.0"
+    "@libsql/client": "^0.15.15"
+  },
+  "volta": {
+    "node": "24.14.1"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "dotenv": "^17.4.1",
+    "express": "^5.2.1"
   }
 }

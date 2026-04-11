@@ -1,4 +1,4 @@
-import { getDb, initDb } from './_db.js';
+const { getDb, initDb } = require('./_db.js');
 
 let initialized = false;
 
@@ -9,7 +9,7 @@ async function ensureInit() {
   }
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   await ensureInit();
 
   if (req.method === 'GET') {
@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     res.setHeader('Allow', 'GET, POST');
     return res.status(405).json({ error: 'Method not allowed' });
   }
-}
+};
 
 async function handleGet(req, res) {
   const db = getDb();
@@ -48,7 +48,6 @@ async function handlePost(req, res) {
   const db = getDb();
   const { image_data, author_name } = req.body;
 
-  // Validate image_data is a valid PNG data URL
   if (!image_data || typeof image_data !== 'string') {
     return res.status(400).json({ error: 'Missing coral image data.' });
   }
@@ -59,7 +58,6 @@ async function handlePost(req, res) {
     return res.status(400).json({ error: 'Image too large.' });
   }
 
-  // Sanitize author name
   const safeName =
     (typeof author_name === 'string' ? author_name : '')
       .trim()

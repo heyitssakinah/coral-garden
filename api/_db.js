@@ -1,8 +1,8 @@
-import { createClient } from '@libsql/client';
+const { createClient } = require('@libsql/client');
 
 let db;
 
-export function getDb() {
+function getDb() {
   if (!db) {
     db = createClient({
       url: process.env.TURSO_DATABASE_URL,
@@ -12,7 +12,7 @@ export function getDb() {
   return db;
 }
 
-export async function initDb() {
+async function initDb() {
   const db = getDb();
   await db.execute(`
     CREATE TABLE IF NOT EXISTS corals (
@@ -23,3 +23,5 @@ export async function initDb() {
     )
   `);
 }
+
+module.exports = { getDb, initDb };
