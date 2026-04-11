@@ -41,13 +41,31 @@ body {
   animation: bounce 2s ease-in-out infinite;
 }
 
-/* Gentle sway for corals — uses rotate only so it composes with translate3d */
-@keyframes sway {
-  0%, 100% { rotate: var(--sway-start, -2deg); }
-  50% { rotate: var(--sway-end, 2deg); }
+/* Coral hover effects */
+.coral-item img {
+  filter: var(--coral-shadow);
+  transition: filter 0.3s ease;
 }
-.coral-sway {
-  animation: sway 4s ease-in-out infinite;
+.coral-item:hover img {
+  filter: var(--coral-shadow)
+          drop-shadow(0 0 12px rgba(255, 255, 255, 0.6))
+          drop-shadow(0 0 24px rgba(255, 255, 255, 0.3));
+}
+.coral-author {
+  transition: scale 0.3s ease;
+  transform-origin: center;
+}
+.coral-item:hover .coral-author {
+  scale: 1.15;
+}
+
+/* Gallery card hover */
+.coral-gallery-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.coral-gallery-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(50, 84, 131, 0.15);
 }
 
 /* Bubble float upward */

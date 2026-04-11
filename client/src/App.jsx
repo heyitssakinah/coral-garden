@@ -1,50 +1,54 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import OceanDive from "./components/OceanDive";
 import DrawingStudio from "./components/DrawingStudio";
-import { ChevronDown } from "lucide-react";
+import CoralGallery from "./components/CoralGallery";
+import { ChevronDown, Eye } from "lucide-react";
 
 // Total Z-depth of the ocean tunnel
-const OCEAN_DEPTH = 10000;
+const OCEAN_DEPTH = 5000;
 // How many px of scroll maps to the full depth
 const SCROLL_RANGE = 4000;
+// Maximum look-around angle in degrees (±45° = 90° total)
+const MAX_LOOK_ANGLE = 45;
 
 export default function App() {
   const [corals, setCorals] = useState([]);
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [loading, setLoading] = useState(true);
+  const [view, setView] = useState("dive"); // 'dive' | 'gallery'
   const [scrollY, setScrollY] = useState(0);
   const [viewportH, setViewportH] = useState(window.innerHeight);
-
-  const fetchCorals = useCallback(async (pageNum = 1, append = false) => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/corals?page=${pageNum}&limit=50`);
-      const data = await res.json();
-      setCorals((prev) => (append ? [...prev, ...data.corals] : data.corals));
-      setTotal(data.total);
-      setPage(data.page);
-      setTotalPages(data.totalPages);
-    } catch {
-      // silently fail
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const [mouseX, setMouseX] = useState(0.5); // 0 = left edge, 1 = right edge
 
   useEffect(() => {
-    fetchCorals();
-  }, [fetchCorals]);
+    let cancelled = false;
+    fetch("/api/corals?page=1&limit=50")
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        setCorals(data.corals);
+        setTotal(data.total);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrollY(window.scrollY);
     const onResize = () => setViewportH(window.innerHeight);
+    const onMouseMove = (e) => {
+      // Skip if mouse is over the drawing studio panel
+      if (e.target.closest?.("[data-drawing-studio]")) return;
+      setMouseX(e.clientX / window.innerWidth);
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize);
+    window.addEventListener("mousemove", onMouseMove, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
+      window.removeEventListener("mousemove", onMouseMove);
     };
   }, []);
 
@@ -72,13 +76,30 @@ export default function App() {
 
   // Background color: surface light → deep dark
   const bg = interpolateColor(
-    [232, 238, 246], // #e8eef6 surface
+    [232, 238, 246], // #0e6080 surface
     [13, 31, 60], // #0d1f3c deep
     progress,
   );
 
+  // Look-around: mouse X maps to Y-rotation of the scene
+  // Reduce sensitivity as you dive deeper (corals are nearer, rotation feels bigger)
+  const lookSensitivity = 1 - progress * 0.95;
+  const lookAngle = (mouseX - 0.5) * 2 * MAX_LOOK_ANGLE * lookSensitivity;
+
   // Header fades out quickly
   const headerOpacity = Math.max(0, 1 - scrollY / 250);
+
+  if (view === "gallery") {
+    return (
+      <CoralGallery
+        corals={corals}
+        onBack={() => {
+          setView("dive");
+          window.scrollTo(0, 0);
+        }}
+      />
+    );
+  }
 
   return (
     <>
@@ -91,7 +112,11 @@ export default function App() {
         style={{ backgroundColor: `rgb(${bg[0]},${bg[1]},${bg[2]})` }}
       >
         {/* Ocean background effects */}
-        <OceanDive scrollY={scrollY} progress={progress} />
+        <OceanDive
+          scrollY={scrollY}
+          progress={progress}
+          lookAngle={lookAngle}
+        />
 
         {/* 3D perspective container */}
         <div
@@ -101,12 +126,13 @@ export default function App() {
             perspectiveOrigin: "50% 50%",
           }}
         >
-          {/* The 3D scene — camera moves forward by translating on Z */}
+          {/* The 3D scene — camera moves forward and rotates on Y for look-around */}
           <div
             className="absolute inset-0"
             style={{
               transformStyle: "preserve-3d",
-              transform: `translateZ(${cameraZ}px)`,
+              transform: `translateZ(${cameraZ}px) rotateY(${lookAngle}deg)`,
+              transition: "transform 0.15s ease-out",
             }}
           >
             {corals.map((coral) => (
@@ -137,6 +163,20 @@ export default function App() {
           </div>
         </header>
 
+        {/* See All Corals button — top right */}
+        <button
+          onClick={() => setView("gallery")}
+          className="absolute z-20 top-5 right-5 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+          style={{
+            color: "#e8eef6",
+            backgroundColor: "rgba(50, 84, 131, 0.5)",
+            backdropFilter: "blur(8px)",
+          }}
+        >
+          <Eye size={16} />
+          See All Corals
+        </button>
+
         {/* Nusajiwa logo — fades in at the very end of the dive */}
         {progress > 0.7 && (
           <div
@@ -163,6 +203,21 @@ export default function App() {
           </div>
         )}
 
+        {/* Sea floor — gradient at the bottom of the viewport */}
+        <div
+          className="absolute inset-x-0 bottom-0 pointer-events-none"
+          style={{
+            height: "35vh",
+            opacity: 1,
+            background: `linear-gradient(to bottom,
+              transparent 0%,
+              rgba(139,119,90,0.15) 30%,
+              rgba(120,100,70,0.3) 80%,
+              rgba(100,85,58,0.45) 95%,
+              rgba(85,72,50,0.55) 100%)`,
+          }}
+        />
+
         {/* Drawing studio */}
         <DrawingStudio onSubmit={handleSubmit} />
       </div>
@@ -175,31 +230,27 @@ function ZCoral({ coral, cameraZ }) {
   const seed = seededRandom(coral.id * 7919);
 
   // Fully random position in the tunnel — each axis independent from coral.id
-  const x = -45 + seed() * 90; // -45vw to +45vw from center (wide spread)
-  const y = -5 + seed() * 35; // +20vh to +55vh below center (grounded on the lower half)
-  const zDepth = -(seed() * OCEAN_DEPTH); // randomly scattered across the full depth
+  const x = -70 + seed() * 140; // -70vw to +70vw from center (extra wide for look-around)
+  const y = 20 + seed() * 10; // anchored near the sea floor
+  const zDepth = -(seed() * OCEAN_DEPTH - 500); // randomly scattered across the full depth
   const size = 120 + seed() * 200; // 120-320px base size
-  const swayDuration = 3 + seed() * 4;
 
   // Relative Z: how far this coral is from the camera
   // Positive = behind camera, negative = ahead
   const relativeZ = zDepth + cameraZ;
-  if (relativeZ > 400) return null; // behind us, culled
+  if (relativeZ > 550) return null; // behind us, culled
   if (relativeZ < -3000) return null; // too far ahead, culled
 
   // Opacity: fully visible in mid-range, fades at extremes
   let opacity = 1;
-  if (relativeZ > 0) {
-    // Just passed us — fade out
-    opacity = Math.max(0, 1 - relativeZ / 400);
-  } else if (relativeZ < -1500) {
+  if (relativeZ < -1500) {
     // Far ahead — fade in gradually
     opacity = Math.max(0, 1 - (Math.abs(relativeZ) - 1500) / 1500);
   }
 
   return (
     <div
-      className="absolute coral-sway"
+      className="absolute coral-item"
       style={{
         left: "50%",
         top: "50%",
@@ -207,9 +258,7 @@ function ZCoral({ coral, cameraZ }) {
         transform: `translate3d(${x}vw, ${y}vh, ${zDepth}px) translate(-50%, -50%)`,
         transformStyle: "preserve-3d",
         opacity,
-        "--sway-start": `${-2 - seed() * 3}deg`,
-        "--sway-end": `${2 + seed() * 3}deg`,
-        animationDuration: `${swayDuration}s`,
+        "--coral-shadow": `drop-shadow(0 4px 20px rgba(0,0,0,${0.15 + opacity * 0.15}))`,
         pointerEvents: opacity > 0.1 ? "auto" : "none",
       }}
     >
@@ -217,14 +266,11 @@ function ZCoral({ coral, cameraZ }) {
         src={coral.image_data}
         alt={`Coral by ${coral.author_name}`}
         className="w-full h-auto"
-        style={{
-          filter: `drop-shadow(0 4px 20px rgba(0,0,0,${0.15 + opacity * 0.15}))`,
-        }}
         loading="lazy"
         draggable={false}
       />
       <p
-        className="text-center text-xs mt-1 font-medium whitespace-nowrap"
+        className="text-center text-xs mt-1 font-medium whitespace-nowrap coral-author"
         style={{ color: `rgba(179, 17, 90, ${opacity})` }}
       >
         {coral.author_name}
@@ -234,9 +280,14 @@ function ZCoral({ coral, cameraZ }) {
 }
 
 function seededRandom(seed) {
-  let s = seed;
+  // Hash the seed to avoid correlation with small sequential inputs
+  let s = Math.abs(seed) | 0;
+  s = (((s >> 16) ^ s) * 45989) | 0;
+  s = (((s >> 16) ^ s) * 45989) | 0;
+  s = ((s >> 16) ^ s) | 0;
+  s = (Math.abs(s) % 2147483646) + 1;
   return () => {
-    s = (s * 16807 + 0) % 2147483647;
+    s = (s * 16807) % 2147483647;
     return (s - 1) / 2147483646;
   };
 }
